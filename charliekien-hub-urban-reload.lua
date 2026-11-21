@@ -13,7 +13,7 @@ local Config = {
         Enabled = false,
         FOV = 150,
         Smoothness = 0.35,
-        MaxDistance = 600,
+        MaxDistance = 2000,
         VisibleOnly = true,
         HeadOnly = true,
         Prediction = 0.0,
@@ -58,7 +58,6 @@ local Connections = {}
 local function addConn(conn) table.insert(Connections, conn) return conn end
 
 local Bypass = {}
-Bypass.OriginalGravity = nil
 
 local function hasExecutor()
     return type(getgenv) == "table"
@@ -187,8 +186,9 @@ function Aimbot:FindBestTarget()
             if part then
                 local dist = (part.Position - Camera.CFrame.Position).Magnitude
                 if dist <= Config.Aim.MaxDistance then
-                    local sp = worldToScreen(part.Position)
-                    if sp and (sp - center).Magnitude <= Config.Aim.FOV then
+                    local sp, onScreen = Camera:WorldToViewportPoint(part.Position)
+                    local sp2 = Vector2.new(sp.X, sp.Y)
+                    if (sp2 - center).Magnitude <= Config.Aim.FOV then
                         local visible = (not Config.Aim.VisibleOnly) or isVisible(part)
                         if visible and dist < bestDist then
                             best = { Player = plr, Part = part }
@@ -974,6 +974,8 @@ local function createUI()
     createToggle(aimTab.Scroll, "Enable Aimbot", Config.Aim.Enabled, function(v) Config.Aim.Enabled = v end)
     createToggle(aimTab.Scroll, "Head Only", Config.Aim.HeadOnly, function(v) Config.Aim.HeadOnly = v end)
     createToggle(aimTab.Scroll, "Visible Only", Config.Aim.VisibleOnly, function(v) Config.Aim.VisibleOnly = v end)
+    createSection(aimTab.Scroll, "RANGE")
+    createSlider(aimTab.Scroll, "Max Distance", 100, 10000, Config.Aim.MaxDistance, function(v) Config.Aim.MaxDistance = v end)
     createSection(aimTab.Scroll, "TUNING")
     createSlider(aimTab.Scroll, "FOV", 20, 500, Config.Aim.FOV, function(v) Config.Aim.FOV = v end)
     createSlider(aimTab.Scroll, "Smoothness", 0.01, 0.99, Config.Aim.Smoothness, function(v) Config.Aim.Smoothness = v end)
