@@ -49,10 +49,10 @@ local Config = {
         HideFromServer = true,
     },
     UI = {
-        AccentColor = Color3.fromRGB(0, 170, 255),
-        BgColor = Color3.fromRGB(20, 20, 30),
-        TextColor = Color3.fromRGB(240, 240, 240),
-        Font = Enum.Font.GothamBold,
+        AccentColor = Color3.fromRGB(0, 140, 255),
+        BgColor = Color3.fromRGB(30, 30, 30),
+        TextColor = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.GothamMedium,
         Visible = true,
     }
 }
@@ -60,18 +60,14 @@ local Config = {
 local Connections = {}
 local function addConn(conn) table.insert(Connections, conn) return conn end
 
+-- ==================== BYPASS ====================
 local Bypass = {}
-
-local function hasExecutor()
-    return type(getgenv) == "table"
-end
+local function hasExecutor() return type(getgenv) == "table" end
 
 local function antiKick()
     if not hasExecutor() then return end
     if type(hookfunction) ~= "function" then return end
-    pcall(function()
-        hookfunction(LocalPlayer.Kick, function() return end)
-    end)
+    pcall(function() hookfunction(LocalPlayer.Kick, function() return end) end)
 end
 
 local function antiFling()
@@ -102,9 +98,7 @@ local function antiVoid()
     if not hrp then return end
     if hrp.Position.Y < -50 then
         local spawn = Workspace:FindFirstChildOfClass("SpawnLocation")
-        if spawn then
-            hrp.CFrame = spawn.CFrame + Vector3.new(0, 5, 0)
-        end
+        if spawn then hrp.CFrame = spawn.CFrame + Vector3.new(0, 5, 0) end
     end
 end
 
@@ -113,15 +107,10 @@ function Bypass:Init()
     self.InitDone = true
     if Config.Bypass.AntiKick then antiKick() end
     if Config.Bypass.AntiFling then
-        addConn(LocalPlayer.CharacterAdded:Connect(function()
-            task.wait(0.5)
-            antiFling()
-        end))
+        addConn(LocalPlayer.CharacterAdded:Connect(function() task.wait(0.5) antiFling() end))
         antiFling()
     end
-    if Config.Bypass.AntiVoid then
-        addConn(RunService.Heartbeat:Connect(antiVoid))
-    end
+    if Config.Bypass.AntiVoid then addConn(RunService.Heartbeat:Connect(antiVoid)) end
     if Config.Bypass.HideFromServer and hasExecutor() and type(sethiddenproperty) == "function" then
         pcall(function()
             local char = LocalPlayer.Character
@@ -132,11 +121,10 @@ end
 
 function Bypass:Toggle(enable)
     Config.Bypass.Enabled = enable
-    if enable then
-        self:Init()
-    end
+    if enable then self:Init() end
 end
 
+-- ==================== AIMBOT ====================
 local Aimbot = {}
 Aimbot.IsActive = false
 Aimbot.CurrentTarget = nil
@@ -149,9 +137,7 @@ local function getAlivePlayers()
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character then
             local hum = plr.Character:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 then
-                table.insert(list, plr)
-            end
+            if hum and hum.Health > 0 then table.insert(list, plr) end
         end
     end
     return list
@@ -160,11 +146,6 @@ end
 local function isTeam(plr)
     if not Config.ESP.TeamCheck then return false end
     return plr.Team == LocalPlayer.Team
-end
-
-local function worldToScreen(pos)
-    local sp, onScreen = Camera:WorldToViewportPoint(pos)
-    return Vector2.new(sp.X, sp.Y), onScreen
 end
 
 local function isVisible(targetPart)
@@ -183,9 +164,7 @@ end
 local function getTargetPart(plr)
     local char = plr.Character
     if not char then return nil end
-    if Config.Aim.HeadOnly then
-        return char:FindFirstChild("Head")
-    end
+    if Config.Aim.HeadOnly then return char:FindFirstChild("Head") end
     return char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
 end
 
@@ -330,22 +309,17 @@ addConn(UserInputService.InputEnded:Connect(function(input)
     end
 end))
 
-addConn(RunService.RenderStepped:Connect(function()
-    Aimbot:Update()
-end))
+addConn(RunService.RenderStepped:Connect(function() Aimbot:Update() end))
 
+-- ==================== ESP ====================
 local ESP = {}
 ESP.Objects = {}
 ESP.SkeletonBones = {
     {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"},
-    {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"},
-    {"LeftLowerArm", "LeftHand"},
-    {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"},
-    {"RightLowerArm", "RightHand"},
-    {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"},
-    {"LeftLowerLeg", "LeftFoot"},
-    {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"},
-    {"RightLowerLeg", "RightFoot"}
+    {"UpperTorso", "LeftUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
+    {"UpperTorso", "RightUpperArm"}, {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"},
+    {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
+    {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
 }
 
 local function createDrawing(class, props)
@@ -377,12 +351,8 @@ local function hideESP(obj)
     if not obj then return end
     for k, v in pairs(obj) do
         if type(v) == "table" then
-            for _, line in ipairs(v) do
-                if line then line.Visible = false end
-            end
-        elseif v and v.Remove then
-            v.Visible = false
-        end
+            for _, line in ipairs(v) do if line then line.Visible = false end end
+        elseif v and v.Remove then v.Visible = false end
     end
 end
 
@@ -391,12 +361,8 @@ local function removeESP(plr)
     if not obj then return end
     for k, v in pairs(obj) do
         if type(v) == "table" then
-            for _, line in ipairs(v) do
-                if line then line:Remove() end
-            end
-        elseif v and v.Remove then
-            v:Remove()
-        end
+            for _, line in ipairs(v) do if line then line:Remove() end end
+        elseif v and v.Remove then v:Remove() end
     end
     ESP.Objects[plr] = nil
 end
@@ -404,87 +370,72 @@ end
 local function updateESP(plr)
     local obj = ESP.Objects[plr]
     if not obj then return end
-    if not Config.ESP.Enabled or not plr.Character then
-        hideESP(obj)
-        return
-    end
+    if not Config.ESP.Enabled or not plr.Character then hideESP(obj) return end
     local char = plr.Character
     local hum = char:FindFirstChildOfClass("Humanoid")
     local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hum or not hrp or hum.Health <= 0 then
-        hideESP(obj)
-        return
-    end
+    if not hum or not hrp or hum.Health <= 0 then hideESP(obj) return end
     local dist = (hrp.Position - Camera.CFrame.Position).Magnitude
-    if dist > Config.ESP.MaxDistance then
-        hideESP(obj)
-        return
-    end
+    if dist > Config.ESP.MaxDistance then hideESP(obj) return end
     local color = Config.ESP.Color
     if Config.ESP.TeamCheck and not isTeam(plr) then color = Config.ESP.EnemyColor end
-    local hrpScreen = worldToScreen(hrp.Position)
+    
+    local sp, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+    local hrpScreen = Vector2.new(sp.X, sp.Y)
 
-    if Config.ESP.Box and hrpScreen then
-        local top = worldToScreen(hrp.Position + Vector3.new(0, 3, 0))
-        local bottom = worldToScreen(hrp.Position - Vector3.new(0, 3, 0))
-        if top and bottom then
-            local h = math.abs(bottom.Y - top.Y)
-            local w = h * 0.55
-            obj.Box.Visible = true
-            obj.Box.Color = color
-            obj.Box.Size = Vector2.new(w, h)
-            obj.Box.Position = Vector2.new(top.X - w / 2, top.Y)
-        else
-            obj.Box.Visible = false
-        end
+    if Config.ESP.Box and onScreen then
+        local topV, _ = Camera:WorldToViewportPoint(hrp.Position + Vector3.new(0, 3, 0))
+        local bottomV, _ = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+        local top = Vector2.new(topV.X, topV.Y)
+        local bottom = Vector2.new(bottomV.X, bottomV.Y)
+        local h = math.abs(bottom.Y - top.Y)
+        local w = h * 0.55
+        obj.Box.Visible = true
+        obj.Box.Color = color
+        obj.Box.Size = Vector2.new(w, h)
+        obj.Box.Position = Vector2.new(top.X - w / 2, top.Y)
     else
         obj.Box.Visible = false
     end
 
-    if Config.ESP.Name and hrpScreen then
+    if Config.ESP.Name and onScreen then
         obj.Name.Visible = true
         obj.Name.Text = plr.Name
-        obj.Name.Position = worldToScreen(hrp.Position + Vector3.new(0, 3.6, 0)) or Vector2.new(-100, -100)
+        obj.Name.Position = Vector2.new(hrpScreen.X, hrpScreen.Y - 25)
         obj.Name.Color = color
     else
         obj.Name.Visible = false
     end
 
-    if Config.ESP.Distance and hrpScreen then
+    if Config.ESP.Distance and onScreen then
         obj.Distance.Visible = true
         obj.Distance.Text = math.floor(dist) .. "m"
-        obj.Distance.Position = worldToScreen(hrp.Position - Vector3.new(0, 3.4, 0)) or Vector2.new(-100, -100)
+        obj.Distance.Position = Vector2.new(hrpScreen.X, hrpScreen.Y + 20)
     else
         obj.Distance.Visible = false
     end
 
-    if Config.ESP.Health and hrpScreen then
+    if Config.ESP.Health and onScreen then
         local h = hum.Health / hum.MaxHealth
-        local top = worldToScreen(hrp.Position + Vector3.new(0, 3, 0))
-        local bottom = worldToScreen(hrp.Position - Vector3.new(0, 3, 0))
-        if top and bottom then
-            local barH = math.abs(bottom.Y - top.Y)
-            local barX = top.X - 40
-            obj.HealthBg.Visible = true
-            obj.HealthBg.Size = Vector2.new(3, barH)
-            obj.HealthBg.Position = Vector2.new(barX, top.Y)
-            obj.HealthBar.Visible = true
-            obj.HealthBar.Size = Vector2.new(3, barH * h)
-            obj.HealthBar.Position = Vector2.new(barX, top.Y + barH * (1 - h))
-            obj.HealthBar.Color = Color3.fromRGB(
-                math.floor(255 * (1 - h)),
-                math.floor(255 * h), 0
-            )
-        else
-            obj.HealthBar.Visible = false
-            obj.HealthBg.Visible = false
-        end
+        local topV, _ = Camera:WorldToViewportPoint(hrp.Position + Vector3.new(0, 3, 0))
+        local bottomV, _ = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+        local top = Vector2.new(topV.X, topV.Y)
+        local bottom = Vector2.new(bottomV.X, bottomV.Y)
+        local barH = math.abs(bottom.Y - top.Y)
+        local barX = top.X - 40
+        obj.HealthBg.Visible = true
+        obj.HealthBg.Size = Vector2.new(3, barH)
+        obj.HealthBg.Position = Vector2.new(barX, top.Y)
+        obj.HealthBar.Visible = true
+        obj.HealthBar.Size = Vector2.new(3, barH * h)
+        obj.HealthBar.Position = Vector2.new(barX, top.Y + barH * (1 - h))
+        obj.HealthBar.Color = Color3.fromRGB(math.floor(255 * (1 - h)), math.floor(255 * h), 0)
     else
         obj.HealthBar.Visible = false
         obj.HealthBg.Visible = false
     end
 
-    if Config.ESP.Tracer and hrpScreen then
+    if Config.ESP.Tracer and onScreen then
         obj.Tracer.Visible = true
         obj.Tracer.Color = color
         obj.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
@@ -493,14 +444,14 @@ local function updateESP(plr)
         obj.Tracer.Visible = false
     end
 
-    if Config.ESP.HeadDot then
+    if Config.ESP.HeadDot and onScreen then
         local head = char:FindFirstChild("Head")
         if head then
-            local sp = worldToScreen(head.Position)
-            if sp then
+            local hs, hOnScreen = Camera:WorldToViewportPoint(head.Position)
+            if hOnScreen then
                 obj.HeadDot.Visible = true
                 obj.HeadDot.Color = color
-                obj.HeadDot.Position = sp
+                obj.HeadDot.Position = Vector2.new(hs.X, hs.Y)
             else
                 obj.HeadDot.Visible = false
             end
@@ -511,19 +462,19 @@ local function updateESP(plr)
         obj.HeadDot.Visible = false
     end
 
-    if Config.ESP.Skeleton then
+    if Config.ESP.Skeleton and onScreen then
         for i, bone in ipairs(ESP.SkeletonBones) do
             local p1 = char:FindFirstChild(bone[1])
             local p2 = char:FindFirstChild(bone[2])
             local line = obj.Skeleton[i]
             if p1 and p2 and line then
-                local s1 = worldToScreen(p1.Position)
-                local s2 = worldToScreen(p2.Position)
-                if s1 and s2 then
+                local s1, on1 = Camera:WorldToViewportPoint(p1.Position)
+                local s2, on2 = Camera:WorldToViewportPoint(p2.Position)
+                if on1 and on2 then
                     line.Visible = true
                     line.Color = color
-                    line.From = s1
-                    line.To = s2
+                    line.From = Vector2.new(s1.X, s1.Y)
+                    line.To = Vector2.new(s2.X, s2.Y)
                 else
                     line.Visible = false
                 end
@@ -532,33 +483,21 @@ local function updateESP(plr)
             end
         end
     else
-        for _, line in ipairs(obj.Skeleton) do
-            if line then line.Visible = false end
-        end
+        for _, line in ipairs(obj.Skeleton) do if line then line.Visible = false end end
     end
 end
 
-addConn(Players.PlayerAdded:Connect(function(plr)
-    if plr ~= LocalPlayer then newESP(plr) end
-end))
+addConn(Players.PlayerAdded:Connect(function(plr) if plr ~= LocalPlayer then newESP(plr) end end))
 addConn(Players.PlayerRemoving:Connect(function(plr) removeESP(plr) end))
-
 addConn(RunService.RenderStepped:Connect(function()
     for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and ESP.Objects[plr] then
-            updateESP(plr)
-        end
+        if plr ~= LocalPlayer and ESP.Objects[plr] then updateESP(plr) end
     end
 end))
+for _, plr in ipairs(Players:GetPlayers()) do if plr ~= LocalPlayer then newESP(plr) end end
 
-for _, plr in ipairs(Players:GetPlayers()) do
-    if plr ~= LocalPlayer then newESP(plr) end
-end
-
-local AntiCheat = {}
-AntiCheat.LastPosition = nil
-AntiCheat.LastCheckTime = tick()
-AntiCheat.Violations = 0
+-- ==================== ANTI-CHEAT ====================
+local AntiCheat = { LastPosition = nil, LastCheckTime = tick(), Violations = 0 }
 AntiCheat.OnDetect = function(msg) warn("[Anti-Cheat] " .. msg) end
 
 addConn(RunService.Heartbeat:Connect(function()
@@ -586,6 +525,7 @@ addConn(RunService.Heartbeat:Connect(function()
     AntiCheat.LastPosition = hrp.Position
 end))
 
+-- ==================== UI MỚI (THEO ẢNH) ====================
 local function createUI()
     local old = CoreGui:FindFirstChild("CharlieKienMenu")
     if old then old:Destroy() end
@@ -606,31 +546,20 @@ local function createUI()
 
     local function stroke(parent, color, thickness, transparency)
         local s = Instance.new("UIStroke")
-        s.Color = color or Config.UI.AccentColor
+        s.Color = color or Color3.fromRGB(60, 60, 60)
         s.Thickness = thickness or 1
-        s.Transparency = transparency or 0.5
+        s.Transparency = transparency or 0
         s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         s.Parent = parent
         return s
     end
 
-    local function gradient(parent, c1, c2, rotation)
-        local g = Instance.new("UIGradient")
-        g.Color = ColorSequence.new(c1, c2)
-        g.Rotation = rotation or 90
-        g.Parent = parent
-        return g
-    end
-
     local Accent = Config.UI.AccentColor
-    local AccentDark = Color3.fromRGB(0, 120, 200)
-    local AccentLight = Color3.fromRGB(80, 200, 255)
-    local BgPanel = Color3.fromRGB(22, 22, 32)
-    local BgRow = Color3.fromRGB(32, 32, 46)
-    local BgRowHover = Color3.fromRGB(42, 42, 60)
+    local BgDark = Color3.fromRGB(20, 20, 20)
+    local BgPanel = Color3.fromRGB(30, 30, 30)
+    local BgRow = Color3.fromRGB(35, 35, 35)
     local TextC = Config.UI.TextColor
-    local TextDim = Color3.fromRGB(150, 150, 170)
-    local Red = Color3.fromRGB(240, 80, 80)
+    local TextDim = Color3.fromRGB(180, 180, 180)
 
     local gui = Instance.new("ScreenGui")
     gui.Name = "CharlieKienMenu"
@@ -640,161 +569,91 @@ local function createUI()
     gui.DisplayOrder = 999
     gui.Parent = CoreGui
 
+    -- Nút bật/tắt menu (Cục tròn C)
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Name = "ToggleBtn"
     toggleBtn.Size = UDim2.new(0, 44, 0, 44)
     toggleBtn.Position = UDim2.new(0, 24, 0.5, -22)
     toggleBtn.BackgroundColor3 = BgPanel
-    toggleBtn.Text = ""
+    toggleBtn.Text = "C"
+    toggleBtn.TextColor3 = Accent
+    toggleBtn.Font = Enum.Font.GothamBold
+    toggleBtn.TextSize = 20
     toggleBtn.AutoButtonColor = false
     toggleBtn.Visible = false
     toggleBtn.Parent = gui
     corner(toggleBtn, 22)
-    stroke(toggleBtn, Accent, 1.5, 0.2)
+    stroke(toggleBtn, Accent, 1.5, 0.3)
 
-    local toggleGlow = Instance.new("Frame")
-    toggleGlow.Size = UDim2.new(1, 4, 1, 4)
-    toggleGlow.Position = UDim2.new(0, -2, 0, -2)
-    toggleGlow.BackgroundColor3 = Accent
-    toggleGlow.BackgroundTransparency = 0.7
-    toggleGlow.ZIndex = -1
-    toggleGlow.Parent = toggleBtn
-    corner(toggleGlow, 24)
-
-    local toggleIcon = Instance.new("TextLabel")
-    toggleIcon.Size = UDim2.new(1, 0, 1, 0)
-    toggleIcon.BackgroundTransparency = 1
-    toggleIcon.Text = "C"
-    toggleIcon.TextColor3 = Accent
-    toggleIcon.Font = Enum.Font.GothamBold
-    toggleIcon.TextSize = 20
-    toggleIcon.Parent = toggleBtn
-
+    -- Panel chính (Mobile style)
     local panel = Instance.new("Frame")
     panel.Name = "Panel"
-    panel.Size = UDim2.new(0, 500, 0, 640)
-    panel.Position = UDim2.new(0.5, -250, 0.5, -320)
-    panel.BackgroundColor3 = BgPanel
-    panel.BackgroundTransparency = 0.05
+    panel.Size = UDim2.new(0, 340, 0, 560)
+    panel.Position = UDim2.new(0.5, -170, 0.5, -280)
+    panel.BackgroundColor3 = BgDark
     panel.BorderSizePixel = 0
     panel.ClipsDescendants = true
     panel.Parent = gui
     panel.Visible = true
     corner(panel, 16)
-    stroke(panel, Accent, 1.5, 0.4)
-    gradient(panel, Color3.fromRGB(28, 28, 40), Color3.fromRGB(18, 18, 26), 90)
 
-    local shadow = Instance.new("Frame")
-    shadow.Size = UDim2.new(1, 30, 1, 30)
-    shadow.Position = UDim2.new(0, -15, 0, -15)
-    shadow.BackgroundColor3 = Color3.new(0, 0, 0)
-    shadow.BackgroundTransparency = 0.85
-    shadow.ZIndex = -1
-    shadow.Parent = panel
-    corner(shadow, 20)
-
+    -- Thanh Header
     local header = Instance.new("Frame")
     header.Size = UDim2.new(1, 0, 0, 60)
-    header.BackgroundColor3 = Color3.new(1, 1, 1)
     header.BackgroundTransparency = 1
-    header.BorderSizePixel = 0
     header.Parent = panel
 
-    local headerGrad = Instance.new("Frame")
-    headerGrad.Size = UDim2.new(1, 0, 1, 0)
-    headerGrad.BackgroundColor3 = Accent
-    headerGrad.BackgroundTransparency = 0.85
-    headerGrad.BorderSizePixel = 0
-    headerGrad.Parent = header
-    corner(headerGrad, 16)
-    gradient(headerGrad, Accent, AccentDark, 0)
-
-    local logoCircle = Instance.new("Frame")
-    logoCircle.Size = UDim2.new(0, 36, 0, 36)
-    logoCircle.Position = UDim2.new(0, 16, 0.5, -18)
-    logoCircle.BackgroundColor3 = Accent
-    logoCircle.Parent = header
-    corner(logoCircle, 10)
-    gradient(logoCircle, AccentLight, Accent, 45)
-
-    local logoIcon = Instance.new("TextLabel")
-    logoIcon.Size = UDim2.new(1, 0, 1, 0)
-    logoIcon.BackgroundTransparency = 1
-    logoIcon.Text = "⚡"
-    logoIcon.TextColor3 = Color3.new(1, 1, 1)
-    logoIcon.Font = Enum.Font.GothamBold
-    logoIcon.TextSize = 20
-    logoIcon.Parent = logoCircle
-
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(0, 240, 0, 20)
-    title.Position = UDim2.new(0, 62, 0, 12)
+    title.Size = UDim2.new(1, -80, 1, 0)
+    title.Position = UDim2.new(0, 16, 0, 0)
     title.BackgroundTransparency = 1
-    title.Text = "CharlieKien Hub"
+    title.Text = "ngọc iu"
     title.TextColor3 = TextC
     title.Font = Enum.Font.GothamBold
-    title.TextSize = 16
+    title.TextSize = 18
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = header
 
-    local subtitle = Instance.new("TextLabel")
-    subtitle.Size = UDim2.new(0, 240, 0, 16)
-    subtitle.Position = UDim2.new(0, 62, 0, 30)
-    subtitle.BackgroundTransparency = 1
-    subtitle.Text = "Premium Build v2.0"
-    subtitle.TextColor3 = TextDim
-    subtitle.Font = Enum.Font.GothamMedium
-    subtitle.TextSize = 11
-    subtitle.TextXAlignment = Enum.TextXAlignment.Left
-    subtitle.Parent = header
+    -- Nút Minimize
+    local minBtn = Instance.new("TextButton")
+    minBtn.Size = UDim2.new(0, 30, 0, 30)
+    minBtn.Position = UDim2.new(1, -76, 0.5, -15)
+    minBtn.BackgroundTransparency = 1
+    minBtn.Text = "−"
+    minBtn.TextColor3 = TextDim
+    minBtn.Font = Enum.Font.GothamBold
+    minBtn.TextSize = 20
+    minBtn.Parent = header
 
+    -- Nút Close
     local closeBtn = Instance.new("TextButton")
     closeBtn.Size = UDim2.new(0, 30, 0, 30)
     closeBtn.Position = UDim2.new(1, -42, 0.5, -15)
-    closeBtn.BackgroundColor3 = Red
-    closeBtn.BackgroundTransparency = 0.75
+    closeBtn.BackgroundTransparency = 1
     closeBtn.Text = "✕"
-    closeBtn.TextColor3 = Color3.new(1, 1, 1)
+    closeBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
     closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 14
-    closeBtn.AutoButtonColor = false
+    closeBtn.TextSize = 16
     closeBtn.Parent = header
-    corner(closeBtn, 8)
 
-    local minBtn = Instance.new("TextButton")
-    minBtn.Size = UDim2.new(0, 30, 0, 30)
-    minBtn.Position = UDim2.new(1, -78, 0.5, -15)
-    minBtn.BackgroundColor3 = Accent
-    minBtn.BackgroundTransparency = 0.75
-    minBtn.Text = "−"
-    minBtn.TextColor3 = Color3.new(1, 1, 1)
-    minBtn.Font = Enum.Font.GothamBold
-    minBtn.TextSize = 16
-    minBtn.AutoButtonColor = false
-    minBtn.Parent = header
-    corner(minBtn, 8)
-
+    -- Thanh Tab Bar
     local tabBar = Instance.new("Frame")
-    tabBar.Size = UDim2.new(1, -20, 0, 44)
-    tabBar.Position = UDim2.new(0, 10, 0, 68)
-    tabBar.BackgroundColor3 = Color3.fromRGB(16, 16, 24)
-    tabBar.BackgroundTransparency = 0.2
-    tabBar.BorderSizePixel = 0
+    tabBar.Size = UDim2.new(1, -24, 0, 40)
+    tabBar.Position = UDim2.new(0, 12, 0, 60)
+    tabBar.BackgroundTransparency = 1
     tabBar.Parent = panel
-    corner(tabBar, 10)
 
     local tabLayout = Instance.new("UIListLayout")
     tabLayout.FillDirection = Enum.FillDirection.Horizontal
-    tabLayout.Padding = UDim.new(0, 6)
+    tabLayout.Padding = UDim.new(0, 8)
     tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     tabLayout.Parent = tabBar
 
+    -- Vùng chứa nội dung
     local contentFrame = Instance.new("Frame")
-    contentFrame.Size = UDim2.new(1, -20, 1, -128)
-    contentFrame.Position = UDim2.new(0, 10, 0, 118)
+    contentFrame.Size = UDim2.new(1, -24, 1, -116)
+    contentFrame.Position = UDim2.new(0, 12, 0, 110)
     contentFrame.BackgroundTransparency = 1
-    contentFrame.BorderSizePixel = 0
     contentFrame.Parent = panel
 
     local tabs = {}
@@ -805,131 +664,112 @@ local function createUI()
         scroll.Size = UDim2.new(1, 0, 1, 0)
         scroll.BackgroundTransparency = 1
         scroll.BorderSizePixel = 0
-        scroll.ScrollBarThickness = 4
-        scroll.ScrollBarImageColor3 = Accent
+        scroll.ScrollBarThickness = 2
+        scroll.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
         scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
         scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        scroll.ScrollBarImageTransparency = 0.3
         scroll.Parent = parent
         local l = Instance.new("UIListLayout")
         l.SortOrder = Enum.SortOrder.LayoutOrder
         l.Padding = UDim.new(0, 8)
         l.Parent = scroll
         local p = Instance.new("UIPadding")
-        p.PaddingRight = UDim.new(0, 8)
+        p.PaddingRight = UDim.new(0, 6)
+        p.PaddingBottom = UDim.new(0, 10)
         p.Parent = scroll
         return scroll
     end
 
-    local function createTab(name, icon)
+    -- Tạo Nút Tab (Pill Shape)
+    local function createTab(name, iconStr)
         local tabBtn = Instance.new("TextButton")
-        tabBtn.Size = UDim2.new(0, 108, 0, 32)
-        tabBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 40)
+        tabBtn.Size = UDim2.new(0, 96, 0, 36)
+        tabBtn.BackgroundColor3 = BgPanel
         tabBtn.Text = ""
         tabBtn.AutoButtonColor = false
         tabBtn.Parent = tabBar
-        corner(tabBtn, 8)
+        corner(tabBtn, 18)
+        local s = stroke(tabBtn, Color3.fromRGB(60, 60, 60), 1, 0.5)
 
-        local tabIcon = Instance.new("TextLabel")
-        tabIcon.Size = UDim2.new(0, 24, 1, 0)
-        tabIcon.Position = UDim2.new(0, 8, 0, 0)
-        tabIcon.BackgroundTransparency = 1
-        tabIcon.Text = icon or "●"
-        tabIcon.TextColor3 = TextDim
-        tabIcon.Font = Enum.Font.GothamBold
-        tabIcon.TextSize = 14
-        tabIcon.Parent = tabBtn
+        local icon = Instance.new("TextLabel")
+        icon.Size = UDim2.new(0, 20, 1, 0)
+        icon.Position = UDim2.new(0, 8, 0, 0)
+        icon.BackgroundTransparency = 1
+        icon.Text = iconStr
+        icon.TextColor3 = TextDim
+        icon.Font = Enum.Font.GothamBold
+        icon.TextSize = 14
+        icon.Parent = tabBtn
 
-        local tabLabel = Instance.new("TextLabel")
-        tabLabel.Size = UDim2.new(1, -34, 1, 0)
-        tabLabel.Position = UDim2.new(0, 32, 0, 0)
-        tabLabel.BackgroundTransparency = 1
-        tabLabel.Text = name
-        tabLabel.TextColor3 = TextDim
-        tabLabel.Font = Enum.Font.GothamBold
-        tabLabel.TextSize = 12
-        tabLabel.TextXAlignment = Enum.TextXAlignment.Left
-        tabLabel.Parent = tabBtn
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(1, -30, 1, 0)
+        lbl.Position = UDim2.new(0, 28, 0, 0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = name
+        lbl.TextColor3 = TextDim
+        lbl.Font = Enum.Font.GothamBold
+        lbl.TextSize = 13
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.Parent = tabBtn
 
         local scroll = createScroll(contentFrame)
         scroll.Visible = false
 
-        local tab = {
-            Button = tabBtn,
-            Scroll = scroll,
-            Icon = tabIcon,
-            Label = tabLabel,
-            Active = false,
-        }
-        tabs[name] = tab
-        return tab
+        tabs[name] = { Button = tabBtn, Scroll = scroll, Icon = icon, Label = lbl, Stroke = s }
     end
 
     local function activateTab(name)
         for tName, tab in pairs(tabs) do
             local isActive = tName == name
-            tab.Active = isActive
             tab.Scroll.Visible = isActive
-            tw(tab.Button, 0.2, { BackgroundColor3 = isActive and Accent or Color3.fromRGB(28, 28, 40) })
-            tw(tab.Icon, 0.2, { TextColor3 = isActive and Color3.new(1, 1, 1) or TextDim })
-            tw(tab.Label, 0.2, { TextColor3 = isActive and Color3.new(1, 1, 1) or TextDim })
+            if isActive then
+                tw(tab.Button, 0.2, { BackgroundColor3 = Color3.fromRGB(240, 240, 240) })
+                tab.Stroke.Transparency = 1
+                tw(tab.Icon, 0.2, { TextColor3 = Color3.fromRGB(20, 20, 20) })
+                tw(tab.Label, 0.2, { TextColor3 = Color3.fromRGB(20, 20, 20) })
+            else
+                tw(tab.Button, 0.2, { BackgroundColor3 = BgPanel })
+                tab.Stroke.Transparency = 0.5
+                tw(tab.Icon, 0.2, { TextColor3 = TextDim })
+                tw(tab.Label, 0.2, { TextColor3 = TextDim })
+            end
         end
-        activeTab = name
     end
 
-    local function createSection(scroll, text)
-        local lbl = Instance.new("TextLabel")
-        lbl.Size = UDim2.new(1, 0, 0, 24)
-        lbl.BackgroundTransparency = 1
-        lbl.Text = "▸ " .. text
-        lbl.TextColor3 = Accent
-        lbl.Font = Enum.Font.GothamBold
-        lbl.TextSize = 12
-        lbl.TextXAlignment = Enum.TextXAlignment.Left
-        lbl.Parent = scroll
-        return lbl
-    end
-
+    -- Tạo Toggle (Công tắc)
     local function createToggle(scroll, text, initial, callback)
         local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, 0, 0, 40)
+        row.Size = UDim2.new(1, 0, 0, 48)
         row.BackgroundColor3 = BgRow
         row.BorderSizePixel = 0
         row.Parent = scroll
-        corner(row, 8)
-
-        local indicator = Instance.new("Frame")
-        indicator.Size = UDim2.new(0, 3, 0, 16)
-        indicator.Position = UDim2.new(0, 0, 0.5, -8)
-        indicator.BackgroundColor3 = initial and Accent or Color3.fromRGB(60, 60, 70)
-        indicator.BorderSizePixel = 0
-        indicator.Parent = row
-        corner(indicator, 2)
+        corner(row, 12)
+        stroke(row, Color3.fromRGB(60, 60, 60), 1, 0.3)
 
         local lbl = Instance.new("TextLabel")
         lbl.Size = UDim2.new(1, -80, 1, 0)
-        lbl.Position = UDim2.new(0, 14, 0, 0)
+        lbl.Position = UDim2.new(0, 16, 0, 0)
         lbl.BackgroundTransparency = 1
         lbl.Text = text
         lbl.TextColor3 = TextC
-        lbl.Font = Enum.Font.GothamMedium
-        lbl.TextSize = 13
+        lbl.Font = Enum.Font.Gotham
+        lbl.TextSize = 14
         lbl.TextXAlignment = Enum.TextXAlignment.Left
         lbl.Parent = row
 
         local toggle = Instance.new("Frame")
-        toggle.Size = UDim2.new(0, 42, 0, 22)
-        toggle.Position = UDim2.new(1, -52, 0.5, -11)
-        toggle.BackgroundColor3 = initial and Accent or Color3.fromRGB(55, 55, 70)
+        toggle.Size = UDim2.new(0, 44, 0, 24)
+        toggle.Position = UDim2.new(1, -60, 0.5, -12)
+        toggle.BackgroundColor3 = initial and Accent or Color3.fromRGB(50, 50, 50)
         toggle.Parent = row
-        corner(toggle, 11)
+        corner(toggle, 12)
 
         local knob = Instance.new("Frame")
-        knob.Size = UDim2.new(0, 16, 0, 16)
-        knob.Position = initial and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+        knob.Size = UDim2.new(0, 18, 0, 18)
+        knob.Position = initial and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
         knob.BackgroundColor3 = Color3.new(1, 1, 1)
         knob.Parent = toggle
-        corner(knob, 8)
+        corner(knob, 9)
 
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, 0, 1, 0)
@@ -938,78 +778,61 @@ local function createUI()
         btn.Parent = row
 
         local state = initial
-        btn.MouseEnter:Connect(function()
-            tw(row, 0.15, { BackgroundColor3 = BgRowHover })
-        end)
-        btn.MouseLeave:Connect(function()
-            tw(row, 0.15, { BackgroundColor3 = BgRow })
-        end)
         btn.MouseButton1Click:Connect(function()
             state = not state
-            local targetPos = state and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
-            local targetColor = state and Accent or Color3.fromRGB(55, 55, 70)
+            local targetPos = state and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+            local targetColor = state and Accent or Color3.fromRGB(50, 50, 50)
             tw(knob, 0.15, { Position = targetPos })
             tw(toggle, 0.15, { BackgroundColor3 = targetColor })
-            tw(indicator, 0.15, { BackgroundColor3 = state and Accent or Color3.fromRGB(60, 60, 70) })
             if callback then callback(state) end
         end)
     end
 
+    -- Tạo Slider (Thanh trượt)
     local function createSlider(scroll, text, min, max, default, callback)
         local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, 0, 0, 64)
+        row.Size = UDim2.new(1, 0, 0, 54)
         row.BackgroundColor3 = BgRow
         row.BorderSizePixel = 0
         row.Parent = scroll
-        corner(row, 8)
+        corner(row, 12)
+        stroke(row, Color3.fromRGB(60, 60, 60), 1, 0.3)
 
         local lbl = Instance.new("TextLabel")
-        lbl.Size = UDim2.new(1, -90, 0, 24)
-        lbl.Position = UDim2.new(0, 12, 0, 6)
+        lbl.Size = UDim2.new(1, -100, 1, 0)
+        lbl.Position = UDim2.new(0, 16, 0, 0)
         lbl.BackgroundTransparency = 1
         lbl.Text = text
         lbl.TextColor3 = TextC
-        lbl.Font = Enum.Font.GothamMedium
-        lbl.TextSize = 13
+        lbl.Font = Enum.Font.Gotham
+        lbl.TextSize = 14
         lbl.TextXAlignment = Enum.TextXAlignment.Left
         lbl.Parent = row
 
-        local valueBox = Instance.new("TextBox")
-        valueBox.Size = UDim2.new(0, 70, 0, 22)
-        valueBox.Position = UDim2.new(1, -82, 0, 7)
-        valueBox.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
-        valueBox.Text = string.format("%.2f", default)
-        valueBox.TextColor3 = Accent
-        valueBox.Font = Enum.Font.GothamBold
-        valueBox.TextSize = 12
-        valueBox.Parent = row
-        corner(valueBox, 6)
-        stroke(valueBox, Accent, 1, 0.6)
-
         local barBg = Instance.new("Frame")
-        barBg.Size = UDim2.new(1, -24, 0, 10)
-        barBg.Position = UDim2.new(0, 12, 0, 40)
-        barBg.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
-        barBg.BorderSizePixel = 0
+        barBg.Size = UDim2.new(0, 140, 0, 36)
+        barBg.Position = UDim2.new(1, -156, 0.5, -18)
+        barBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
         barBg.Parent = row
-        corner(barBg, 5)
+        corner(barBg, 18)
+        stroke(barBg, Color3.fromRGB(70, 70, 70), 1, 0.5)
 
         local barFill = Instance.new("Frame")
         barFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
         barFill.BackgroundColor3 = Accent
-        barFill.BorderSizePixel = 0
         barFill.Parent = barBg
-        corner(barFill, 5)
-        gradient(barFill, AccentLight, Accent, 0)
+        corner(barFill, 18)
 
-        local knob = Instance.new("Frame")
-        knob.Size = UDim2.new(0, 14, 0, 14)
-        knob.Position = UDim2.new((default - min) / (max - min), -7, 0.5, -7)
-        knob.BackgroundColor3 = Color3.new(1, 1, 1)
-        knob.ZIndex = 2
-        knob.Parent = barBg
-        corner(knob, 7)
-        stroke(knob, Accent, 2, 0)
+        local valueLbl = Instance.new("TextLabel")
+        valueLbl.Size = UDim2.new(0, 40, 1, 0)
+        valueLbl.Position = UDim2.new(0, 12, 0, 0)
+        valueLbl.BackgroundTransparency = 1
+        valueLbl.Text = tostring(default)
+        valueLbl.TextColor3 = Color3.new(1, 1, 1)
+        valueLbl.Font = Enum.Font.GothamBold
+        valueLbl.TextSize = 13
+        valueLbl.TextXAlignment = Enum.TextXAlignment.Left
+        valueLbl.Parent = barBg
 
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, 0, 1, 0)
@@ -1022,10 +845,9 @@ local function createUI()
             value = math.clamp(value, min, max)
             local rel = (value - min) / (max - min)
             barFill.Size = UDim2.new(rel, 0, 1, 0)
-            knob.Position = UDim2.new(rel, -7, 0.5, -7)
-            valueBox.Text = string.format("%.2f", value)
+            valueLbl.Text = string.format("%.2f", value)
+            if text:find("FPS") then valueLbl.Text = tostring(math.floor(value)) end
             if callback then callback(value) end
-            return value
         end
 
         local function updateFromInput(input)
@@ -1034,161 +856,82 @@ local function createUI()
         end
 
         btn.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 dragging = true
                 updateFromInput(input)
             end
         end)
         UserInputService.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                 updateFromInput(input)
             end
         end)
         UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-        end)
-
-        valueBox.FocusLost:Connect(function()
-            local num = tonumber(valueBox.Text)
-            if num then setValue(num)
-            else valueBox.Text = string.format("%.2f", min + ((barFill.Size.X.Scale) * (max - min))) end
-        end)
-
-        row.MouseEnter:Connect(function()
-            tw(row, 0.15, { BackgroundColor3 = BgRowHover })
-        end)
-        row.MouseLeave:Connect(function()
-            tw(row, 0.15, { BackgroundColor3 = BgRow })
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+            end
         end)
     end
 
-    local aimTab = createTab("AIM", "◎")
-    createSection(aimTab.Scroll, "TARGETING")
-    createToggle(aimTab.Scroll, "Enable Aimbot", Config.Aim.Enabled, function(v) Config.Aim.Enabled = v end)
-    createToggle(aimTab.Scroll, "Hard Lock (Cứng)", Config.Aim.HardLock, function(v) Config.Aim.HardLock = v end)
-    createToggle(aimTab.Scroll, "Switch On Turn", Config.Aim.SwitchOnTurn, function(v) Config.Aim.SwitchOnTurn = v end)
-    createToggle(aimTab.Scroll, "Head Only", Config.Aim.HeadOnly, function(v) Config.Aim.HeadOnly = v end)
-    createToggle(aimTab.Scroll, "Visible Only", Config.Aim.VisibleOnly, function(v) Config.Aim.VisibleOnly = v end)
-    createSection(aimTab.Scroll, "RANGE")
-    createSlider(aimTab.Scroll, "Max Distance", 100, 10000, Config.Aim.MaxDistance, function(v) Config.Aim.MaxDistance = v end)
-    createSection(aimTab.Scroll, "TUNING")
-    createSlider(aimTab.Scroll, "FOV", 20, 800, Config.Aim.FOV, function(v) Config.Aim.FOV = v end)
-    createSlider(aimTab.Scroll, "Smoothness", 0.01, 0.99, Config.Aim.Smoothness, function(v) Config.Aim.Smoothness = v end)
-    createSlider(aimTab.Scroll, "Prediction", 0.0, 0.5, Config.Aim.Prediction, function(v) Config.Aim.Prediction = v end)
-    createSection(aimTab.Scroll, "SWITCH ON TURN")
-    createSlider(aimTab.Scroll, "Turn Threshold", 50, 1000, Config.Aim.TurnThreshold, function(v) Config.Aim.TurnThreshold = v end)
+    createTab("ESP", "◈")
+    createTab("Aimbot", "◎")
+    createTab("Misc", "⚙")
 
-    local espTab = createTab("ESP", "◈")
-    createSection(espTab.Scroll, "GENERAL")
-    createToggle(espTab.Scroll, "Enable ESP", Config.ESP.Enabled, function(v) Config.ESP.Enabled = v end)
-    createToggle(espTab.Scroll, "Team Check", Config.ESP.TeamCheck, function(v) Config.ESP.TeamCheck = v end)
-    createSection(espTab.Scroll, "ELEMENTS")
-    createToggle(espTab.Scroll, "Box", Config.ESP.Box, function(v) Config.ESP.Box = v end)
-    createToggle(espTab.Scroll, "Name", Config.ESP.Name, function(v) Config.ESP.Name = v end)
-    createToggle(espTab.Scroll, "Health Bar", Config.ESP.Health, function(v) Config.ESP.Health = v end)
-    createToggle(espTab.Scroll, "Distance", Config.ESP.Distance, function(v) Config.ESP.Distance = v end)
-    createToggle(espTab.Scroll, "Tracer", Config.ESP.Tracer, function(v) Config.ESP.Tracer = v end)
-    createToggle(espTab.Scroll, "Skeleton", Config.ESP.Skeleton, function(v) Config.ESP.Skeleton = v end)
-    createToggle(espTab.Scroll, "Head Dot", Config.ESP.HeadDot, function(v) Config.ESP.HeadDot = v end)
-    createSection(espTab.Scroll, "RANGE")
-    createSlider(espTab.Scroll, "Max Distance", 100, 3000, Config.ESP.MaxDistance, function(v) Config.ESP.MaxDistance = v end)
+    -- Đổ dữ liệu vào tab ESP
+    local espScroll = tabs["ESP"].Scroll
+    createToggle(espScroll, "Bật ESP", Config.ESP.Enabled, function(v) Config.ESP.Enabled = v end)
+    createToggle(espScroll, "Hiện Box", Config.ESP.Box, function(v) Config.ESP.Box = v end)
+    createToggle(espScroll, "Hiện Tên", Config.ESP.Name, function(v) Config.ESP.Name = v end)
+    createToggle(espScroll, "Máu", Config.ESP.Health, function(v) Config.ESP.Health = v end)
+    createToggle(espScroll, "Khoảng cách", Config.ESP.Distance, function(v) Config.ESP.Distance = v end)
+    createToggle(espScroll, "Team check", Config.ESP.TeamCheck, function(v) Config.ESP.TeamCheck = v end)
+    createSlider(espScroll, "Khoảng cách tối đa", 100, 3000, Config.ESP.MaxDistance, function(v) Config.ESP.MaxDistance = v end)
 
-    local bypassTab = createTab("BYPASS", "⚙")
-    createSection(bypassTab.Scroll, "MASTER")
-    createToggle(bypassTab.Scroll, "Enable Bypass", Config.Bypass.Enabled, function(v) Bypass:Toggle(v) end)
-    createSection(bypassTab.Scroll, "PROTECTION")
-    createToggle(bypassTab.Scroll, "Anti Kick", Config.Bypass.AntiKick, function(v) Config.Bypass.AntiKick = v end)
-    createToggle(bypassTab.Scroll, "Anti Fling", Config.Bypass.AntiFling, function(v) Config.Bypass.AntiFling = v end)
-    createToggle(bypassTab.Scroll, "Anti Void", Config.Bypass.AntiVoid, function(v) Config.Bypass.AntiVoid = v end)
-    createToggle(bypassTab.Scroll, "Hide From Server", Config.Bypass.HideFromServer, function(v) Config.Bypass.HideFromServer = v end)
+    -- Đổ dữ liệu vào tab Aimbot
+    local aimScroll = tabs["Aimbot"].Scroll
+    createToggle(aimScroll, "Bật Aimbot", Config.Aim.Enabled, function(v) Config.Aim.Enabled = v end)
+    createToggle(aimScroll, "Wall check", Config.Aim.VisibleOnly, function(v) Config.Aim.VisibleOnly = v end)
+    createToggle(aimScroll, "Team check", Config.ESP.TeamCheck, function(v) Config.ESP.TeamCheck = v end)
+    createToggle(aimScroll, "Tự chuyển khi xoay", Config.Aim.SwitchOnTurn, function(v) Config.Aim.SwitchOnTurn = v end)
+    createSlider(aimScroll, "Tốc độ quét mục tiêu (FPS)", 10, 120, 55, function(v) end)
+    createSlider(aimScroll, "Khoảng cách tối đa (m)", 100, 10000, Config.Aim.MaxDistance, function(v) Config.Aim.MaxDistance = v end)
+    createSlider(aimScroll, "Vùng FOV", 20, 800, Config.Aim.FOV, function(v) Config.Aim.FOV = v end)
 
-    local miscTab = createTab("MISC", "✦")
-    createSection(miscTab.Scroll, "SECURITY")
-    createToggle(miscTab.Scroll, "Enable Anti-Cheat", Config.AntiCheat.Enabled, function(v) Config.AntiCheat.Enabled = v end)
+    -- Đổ dữ liệu vào tab Misc
+    local miscScroll = tabs["Misc"].Scroll
+    createToggle(miscScroll, "Chống Kick", Config.Bypass.AntiKick, function(v) Config.Bypass.AntiKick = v end)
+    createToggle(miscScroll, "Chống Fling", Config.Bypass.AntiFling, function(v) Config.Bypass.AntiFling = v end)
+    createToggle(miscScroll, "Chống rơi (Void)", Config.Bypass.AntiVoid, function(v) Config.Bypass.AntiVoid = v end)
+    createToggle(miscScroll, "Ẩn khỏi Server", Config.Bypass.HideFromServer, function(v) Config.Bypass.HideFromServer = v end)
+    createToggle(miscScroll, "Anti-Cheat Nội bộ", Config.AntiCheat.Enabled, function(v) Config.AntiCheat.Enabled = v end)
 
-    local infoRow = Instance.new("Frame")
-    infoRow.Size = UDim2.new(1, 0, 0, 50)
-    infoRow.BackgroundColor3 = BgRow
-    infoRow.BorderSizePixel = 0
-    infoRow.Parent = miscTab.Scroll
-    corner(infoRow, 8)
-
-    local infoLbl = Instance.new("TextLabel")
-    infoLbl.Size = UDim2.new(1, -24, 0, 20)
-    infoLbl.Position = UDim2.new(0, 12, 0, 6)
-    infoLbl.BackgroundTransparency = 1
-    infoLbl.Text = "👤 " .. LocalPlayer.Name
-    infoLbl.TextColor3 = Accent
-    infoLbl.Font = Enum.Font.GothamBold
-    infoLbl.TextSize = 13
-    infoLbl.TextXAlignment = Enum.TextXAlignment.Left
-    infoLbl.Parent = infoRow
-
-    local infoSub = Instance.new("TextLabel")
-    infoSub.Size = UDim2.new(1, -24, 0, 18)
-    infoSub.Position = UDim2.new(0, 12, 0, 26)
-    infoSub.BackgroundTransparency = 1
-    infoSub.Text = "RMB = Aim | RightShift = Toggle"
-    infoSub.TextColor3 = TextDim
-    infoSub.Font = Enum.Font.GothamMedium
-    infoSub.TextSize = 11
-    infoSub.TextXAlignment = Enum.TextXAlignment.Left
-    infoSub.Parent = infoRow
-
-    activateTab("AIM")
+    activateTab("Aimbot")
 
     local isOpen = true
     local function openPanel()
         isOpen = true
         panel.Visible = true
         toggleBtn.Visible = false
-        panel.Size = UDim2.new(0, 500, 0, 0)
-        panel.BackgroundTransparency = 1
-        tw(panel, 0.3, {
-            Size = UDim2.new(0, 500, 0, 640),
-            BackgroundTransparency = 0.05
-        }, Enum.EasingStyle.Back)
+        panel.Size = UDim2.new(0, 340, 0, 0)
+        tw(panel, 0.3, { Size = UDim2.new(0, 340, 0, 560) }, Enum.EasingStyle.Back)
     end
 
     local function minimizePanel()
         isOpen = false
-        local t = tw(panel, 0.2, {
-            Size = UDim2.new(0, 500, 0, 0),
-            BackgroundTransparency = 1
-        }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+        local t = tw(panel, 0.2, { Size = UDim2.new(0, 340, 0, 0) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
         t.Completed:Connect(function()
             panel.Visible = false
             toggleBtn.Visible = true
             toggleBtn.Size = UDim2.new(0, 0, 0, 0)
-            toggleBtn.Position = UDim2.new(0, 24, 0.5, -22)
-            tw(toggleBtn, 0.25, {
-                Size = UDim2.new(0, 44, 0, 44)
-            }, Enum.EasingStyle.Back)
+            tw(toggleBtn, 0.25, { Size = UDim2.new(0, 44, 0, 44) }, Enum.EasingStyle.Back)
         end)
-    end
-
-    local function togglePanel()
-        if isOpen then minimizePanel() else openPanel() end
     end
 
     toggleBtn.MouseButton1Click:Connect(openPanel)
     closeBtn.MouseButton1Click:Connect(minimizePanel)
     minBtn.MouseButton1Click:Connect(minimizePanel)
 
-    toggleBtn.MouseEnter:Connect(function()
-        tw(toggleBtn, 0.15, { Size = UDim2.new(0, 50, 0, 50), Position = UDim2.new(0, 21, 0.5, -25) })
-        tw(toggleGlow, 0.15, { BackgroundTransparency = 0.5 })
-    end)
-    toggleBtn.MouseLeave:Connect(function()
-        tw(toggleBtn, 0.15, { Size = UDim2.new(0, 44, 0, 44), Position = UDim2.new(0, 24, 0.5, -22) })
-        tw(toggleGlow, 0.15, { BackgroundTransparency = 0.7 })
-    end)
-
-    closeBtn.MouseEnter:Connect(function() tw(closeBtn, 0.15, { BackgroundTransparency = 0.4 }) end)
-    closeBtn.MouseLeave:Connect(function() tw(closeBtn, 0.15, { BackgroundTransparency = 0.75 }) end)
-    minBtn.MouseEnter:Connect(function() tw(minBtn, 0.15, { BackgroundTransparency = 0.4 }) end)
-    minBtn.MouseLeave:Connect(function() tw(minBtn, 0.15, { BackgroundTransparency = 0.75 }) end)
-
+    -- Kéo thả menu
     local dragging, dragStart, startPos = false, nil, nil
     header.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -1200,10 +943,7 @@ local function createUI()
     UserInputService.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
-            panel.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
+            panel.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
     UserInputService.InputEnded:Connect(function(input)
@@ -1212,31 +952,13 @@ local function createUI()
         end
     end)
 
-    local tabOrder = {"AIM", "ESP", "BYPASS", "MISC"}
-    UserInputService.InputBegan:Connect(function(input, gp)
-        if gp then return end
-        if input.KeyCode == Enum.KeyCode.RightShift then
-            togglePanel()
-        end
-        local num = input.KeyCode.Value - Enum.KeyCode.One.Value + 1
-        if num >= 1 and num <= #tabOrder and panel.Visible then
-            activateTab(tabOrder[num])
-        end
-    end)
-
+    -- Sự kiện click tab
     for name, tab in pairs(tabs) do
-        tab.Button.MouseButton1Click:Connect(function()
-            activateTab(name)
-        end)
+        tab.Button.MouseButton1Click:Connect(function() activateTab(name) end)
     end
 
     return gui
 end
 
 local ui = createUI()
-
-if Config.Bypass.Enabled then
-    Bypass:Init()
-end
-
-print("[CharlieKien] Loaded. RMB = Aim | RightShift = Menu | 1-4 = Tabs")
+if Config.Bypass.Enabled then Bypass:Init() end
