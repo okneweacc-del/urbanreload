@@ -10,13 +10,13 @@ local Camera = Workspace.CurrentCamera
 
 local Config = {
     Aim = {
-        Enabled = false,
-        FOV = 150,
+        Enabled = true,
+        FOV = 200,
         Smoothness = 0.01,
         MaxDistance = 5000,
         VisibleOnly = false,
         HeadOnly = true,
-        Prediction = 0.0,
+        Prediction = 0.15,
         HardLock = true,
         SwitchOnTurn = true,
         TurnThreshold = 250,
@@ -49,19 +49,18 @@ local Config = {
         HideFromServer = true,
     },
     UI = {
-        AccentColor = Color3.fromRGB(0, 140, 255),
-        BgColor = Color3.fromRGB(30, 30, 30),
+        AccentColor = Color3.fromRGB(0, 150, 255),
+        BgColor = Color3.fromRGB(15, 15, 20),
         TextColor = Color3.fromRGB(255, 255, 255),
-        Font = Enum.Font.GothamMedium,
-        Visible = true,
+        Font = Enum.Font.GothamBold,
     }
 }
 
 local Connections = {}
 local function addConn(conn) table.insert(Connections, conn) return conn end
 
--- ==================== BYPASS ====================
 local Bypass = {}
+
 local function hasExecutor() return type(getgenv) == "table" end
 
 local function antiKick()
@@ -124,7 +123,6 @@ function Bypass:Toggle(enable)
     if enable then self:Init() end
 end
 
--- ==================== AIMBOT ====================
 local Aimbot = {}
 Aimbot.IsActive = false
 Aimbot.CurrentTarget = nil
@@ -213,8 +211,7 @@ function Aimbot:FindBestTarget(excludePlr)
 end
 
 function Aimbot:CheckCameraTurn()
-    if not Config.Aim.SwitchOnTurn then return end
-    if not self.LockedTarget then return end
+    if not Config.Aim.SwitchOnTurn or not self.LockedTarget then return end
     local now = tick()
     if now < self.SuppressedUntil then return end
 
@@ -311,7 +308,6 @@ end))
 
 addConn(RunService.RenderStepped:Connect(function() Aimbot:Update() end))
 
--- ==================== ESP ====================
 local ESP = {}
 ESP.Objects = {}
 ESP.SkeletonBones = {
@@ -496,7 +492,6 @@ addConn(RunService.RenderStepped:Connect(function()
 end))
 for _, plr in ipairs(Players:GetPlayers()) do if plr ~= LocalPlayer then newESP(plr) end end
 
--- ==================== ANTI-CHEAT ====================
 local AntiCheat = { LastPosition = nil, LastCheckTime = tick(), Violations = 0 }
 AntiCheat.OnDetect = function(msg) warn("[Anti-Cheat] " .. msg) end
 
@@ -525,7 +520,6 @@ addConn(RunService.Heartbeat:Connect(function()
     AntiCheat.LastPosition = hrp.Position
 end))
 
--- ==================== UI MỚI (THEO ẢNH) ====================
 local function createUI()
     local old = CoreGui:FindFirstChild("CharlieKienMenu")
     if old then old:Destroy() end
@@ -569,7 +563,6 @@ local function createUI()
     gui.DisplayOrder = 999
     gui.Parent = CoreGui
 
-    -- Nút bật/tắt menu (Cục tròn C)
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Name = "ToggleBtn"
     toggleBtn.Size = UDim2.new(0, 44, 0, 44)
@@ -585,7 +578,6 @@ local function createUI()
     corner(toggleBtn, 22)
     stroke(toggleBtn, Accent, 1.5, 0.3)
 
-    -- Panel chính (Mobile style)
     local panel = Instance.new("Frame")
     panel.Name = "Panel"
     panel.Size = UDim2.new(0, 340, 0, 560)
@@ -597,7 +589,6 @@ local function createUI()
     panel.Visible = true
     corner(panel, 16)
 
-    -- Thanh Header
     local header = Instance.new("Frame")
     header.Size = UDim2.new(1, 0, 0, 60)
     header.BackgroundTransparency = 1
@@ -607,14 +598,13 @@ local function createUI()
     title.Size = UDim2.new(1, -80, 1, 0)
     title.Position = UDim2.new(0, 16, 0, 0)
     title.BackgroundTransparency = 1
-    title.Text = "ngọc iu"
+    title.Text = "CharlieKien"
     title.TextColor3 = TextC
     title.Font = Enum.Font.GothamBold
     title.TextSize = 18
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = header
 
-    -- Nút Minimize
     local minBtn = Instance.new("TextButton")
     minBtn.Size = UDim2.new(0, 30, 0, 30)
     minBtn.Position = UDim2.new(1, -76, 0.5, -15)
@@ -625,7 +615,6 @@ local function createUI()
     minBtn.TextSize = 20
     minBtn.Parent = header
 
-    -- Nút Close
     local closeBtn = Instance.new("TextButton")
     closeBtn.Size = UDim2.new(0, 30, 0, 30)
     closeBtn.Position = UDim2.new(1, -42, 0.5, -15)
@@ -636,7 +625,6 @@ local function createUI()
     closeBtn.TextSize = 16
     closeBtn.Parent = header
 
-    -- Thanh Tab Bar
     local tabBar = Instance.new("Frame")
     tabBar.Size = UDim2.new(1, -24, 0, 40)
     tabBar.Position = UDim2.new(0, 12, 0, 60)
@@ -649,7 +637,6 @@ local function createUI()
     tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     tabLayout.Parent = tabBar
 
-    -- Vùng chứa nội dung
     local contentFrame = Instance.new("Frame")
     contentFrame.Size = UDim2.new(1, -24, 1, -116)
     contentFrame.Position = UDim2.new(0, 12, 0, 110)
@@ -680,7 +667,6 @@ local function createUI()
         return scroll
     end
 
-    -- Tạo Nút Tab (Pill Shape)
     local function createTab(name, iconStr)
         local tabBtn = Instance.new("TextButton")
         tabBtn.Size = UDim2.new(0, 96, 0, 36)
@@ -736,7 +722,6 @@ local function createUI()
         end
     end
 
-    -- Tạo Toggle (Công tắc)
     local function createToggle(scroll, text, initial, callback)
         local row = Instance.new("Frame")
         row.Size = UDim2.new(1, 0, 0, 48)
@@ -788,7 +773,6 @@ local function createUI()
         end)
     end
 
-    -- Tạo Slider (Thanh trượt)
     local function createSlider(scroll, text, min, max, default, callback)
         local row = Instance.new("Frame")
         row.Size = UDim2.new(1, 0, 0, 54)
@@ -877,7 +861,6 @@ local function createUI()
     createTab("Aimbot", "◎")
     createTab("Misc", "⚙")
 
-    -- Đổ dữ liệu vào tab ESP
     local espScroll = tabs["ESP"].Scroll
     createToggle(espScroll, "Bật ESP", Config.ESP.Enabled, function(v) Config.ESP.Enabled = v end)
     createToggle(espScroll, "Hiện Box", Config.ESP.Box, function(v) Config.ESP.Box = v end)
@@ -887,7 +870,6 @@ local function createUI()
     createToggle(espScroll, "Team check", Config.ESP.TeamCheck, function(v) Config.ESP.TeamCheck = v end)
     createSlider(espScroll, "Khoảng cách tối đa", 100, 3000, Config.ESP.MaxDistance, function(v) Config.ESP.MaxDistance = v end)
 
-    -- Đổ dữ liệu vào tab Aimbot
     local aimScroll = tabs["Aimbot"].Scroll
     createToggle(aimScroll, "Bật Aimbot", Config.Aim.Enabled, function(v) Config.Aim.Enabled = v end)
     createToggle(aimScroll, "Wall check", Config.Aim.VisibleOnly, function(v) Config.Aim.VisibleOnly = v end)
@@ -897,7 +879,6 @@ local function createUI()
     createSlider(aimScroll, "Khoảng cách tối đa (m)", 100, 10000, Config.Aim.MaxDistance, function(v) Config.Aim.MaxDistance = v end)
     createSlider(aimScroll, "Vùng FOV", 20, 800, Config.Aim.FOV, function(v) Config.Aim.FOV = v end)
 
-    -- Đổ dữ liệu vào tab Misc
     local miscScroll = tabs["Misc"].Scroll
     createToggle(miscScroll, "Chống Kick", Config.Bypass.AntiKick, function(v) Config.Bypass.AntiKick = v end)
     createToggle(miscScroll, "Chống Fling", Config.Bypass.AntiFling, function(v) Config.Bypass.AntiFling = v end)
@@ -931,7 +912,6 @@ local function createUI()
     closeBtn.MouseButton1Click:Connect(minimizePanel)
     minBtn.MouseButton1Click:Connect(minimizePanel)
 
-    -- Kéo thả menu
     local dragging, dragStart, startPos = false, nil, nil
     header.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -952,7 +932,6 @@ local function createUI()
         end
     end)
 
-    -- Sự kiện click tab
     for name, tab in pairs(tabs) do
         tab.Button.MouseButton1Click:Connect(function() activateTab(name) end)
     end
