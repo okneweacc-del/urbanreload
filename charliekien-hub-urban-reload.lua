@@ -18,6 +18,8 @@ local Config = {
         HeadOnly = true,
         Prediction = 0.0,
         HardLock = true,
+        SwitchOnTurn = true,
+        TurnThreshold = 250,
     },
     ESP = {
         Enabled = false,
@@ -138,6 +140,9 @@ end
 local Aimbot = {}
 Aimbot.IsActive = false
 Aimbot.CurrentTarget = nil
+Aimbot.LockedTarget = nil
+Aimbot.LastCameraDir = nil
+Aimbot.SuppressedUntil = 0
 
 local function getAlivePlayers()
     local list = {}
@@ -175,24 +180,51 @@ local function isVisible(targetPart)
     return hit == targetPart or hit:IsDescendantOf(targetPart.Parent)
 end
 
-function Aimbot:FindBestTarget()
-    local best, bestDist = nil, math.huge
-    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+local function getTargetPart(plr)
+    local char = plr.Character
+    if not char then return nil end
+    if Config.Aim.HeadOnly then
+        return char:FindFirstChild("Head")
+    end
+    return char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
+end
+
+local function isValidTarget(plr)
+    if not plr or plr == LocalPlayer then return false end
+    local char = plr.Character
+    if not char then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum or hum.Health <= 0 then return false end
+    if isTeam(plr) then return false end
+    local part = getTargetPart(plr)
+    if not part then return false end
+    local dist = (part.Position - Camera.CFrame.Position).Magnitude
+    if dist > Config.Aim.MaxDistance then return false end
+    if Config.Aim.VisibleOnly and not isVisible(part) then return false end
+    return true
+end
+
+local function getAngleTo(part)
+    local cameraPos = Camera.CFrame.Position
+    local look = Camera.CFrame.LookVector
+    local toTarget = (part.Position - cameraPos).Unit
+    local dot = math.clamp(look:Dot(toTarget), -1, 1)
+    return math.deg(math.acos(dot))
+end
+
+function Aimbot:FindBestTarget(excludePlr)
+    local best, bestScore = nil, math.huge
     for _, plr in ipairs(getAlivePlayers()) do
-        if not isTeam(plr) then
-            local char = plr.Character
-            local part = Config.Aim.HeadOnly and char:FindFirstChild("Head")
-                or (char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart"))
+        if plr ~= excludePlr and isValidTarget(plr) then
+            local part = getTargetPart(plr)
             if part then
-                local dist = (part.Position - Camera.CFrame.Position).Magnitude
-                if dist <= Config.Aim.MaxDistance then
-                    local sp = worldToScreen(part.Position)
-                    if (sp - center).Magnitude <= Config.Aim.FOV then
-                        local visible = (not Config.Aim.VisibleOnly) or isVisible(part)
-                        if visible and dist < bestDist then
-                            best = { Player = plr, Part = part }
-                            bestDist = dist
-                        end
+                local angle = getAngleTo(part)
+                if angle <= Config.Aim.FOV then
+                    local dist = (part.Position - Camera.CFrame.Position).Magnitude
+                    local score = angle + dist * 0.001
+                    if score < bestScore then
+                        best = { Player = plr, Part = part }
+                        bestScore = score
                     end
                 end
             end
@@ -201,21 +233,73 @@ function Aimbot:FindBestTarget()
     return best
 end
 
+function Aimbot:CheckCameraTurn()
+    if not Config.Aim.SwitchOnTurn then return end
+    if not self.LockedTarget then return end
+    local now = tick()
+    if now < self.SuppressedUntil then return end
+
+    local currentDir = Camera.CFrame.LookVector
+    if self.LastCameraDir then
+        local delta = (currentDir - self.LastCameraDir).Magnitude
+        if delta * 1000 > Config.Aim.TurnThreshold then
+            local oldTarget = self.LockedTarget
+            self.LockedTarget = nil
+            self.CurrentTarget = nil
+            self.SuppressedUntil = now + 0.15
+            task.spawn(function()
+                task.wait(0.05)
+                local newTarget = self:FindBestTarget(oldTarget.Player)
+                if newTarget and isValidTarget(newTarget.Player) then
+                    self.LockedTarget = newTarget
+                    self.CurrentTarget = newTarget
+                end
+            end)
+        end
+    end
+    self.LastCameraDir = currentDir
+end
+
 function Aimbot:Update()
     if not Config.Aim.Enabled or not self.IsActive then
         self.CurrentTarget = nil
+        self.LockedTarget = nil
+        self.LastCameraDir = nil
         return
     end
-    local target = self:FindBestTarget()
-    if not target then
+
+    self:CheckCameraTurn()
+
+    if self.LockedTarget and not isValidTarget(self.LockedTarget.Player) then
+        self.LockedTarget = nil
+        self.CurrentTarget = nil
+    end
+
+    if not self.LockedTarget then
+        local newTarget = self:FindBestTarget()
+        if newTarget then
+            self.LockedTarget = newTarget
+        else
+            self.CurrentTarget = nil
+            return
+        end
+    end
+
+    local target = self.LockedTarget
+    self.CurrentTarget = target
+    local targetPart = getTargetPart(target.Player)
+    if not targetPart then
+        self.LockedTarget = nil
         self.CurrentTarget = nil
         return
     end
-    self.CurrentTarget = target
-    local targetPos = target.Part.Position
+    target.Part = targetPart
+
+    local targetPos = targetPart.Position
     if Config.Aim.Prediction > 0 then
-        targetPos = targetPos + target.Part.AssemblyLinearVelocity * Config.Aim.Prediction
+        targetPos = targetPos + targetPart.AssemblyLinearVelocity * Config.Aim.Prediction
     end
+
     local currentCF = Camera.CFrame
     local desiredCF = CFrame.new(currentCF.Position, targetPos)
     if Config.Aim.HardLock then
@@ -224,12 +308,16 @@ function Aimbot:Update()
         local alpha = 1 - math.clamp(Config.Aim.Smoothness, 0.01, 0.99)
         Camera.CFrame = currentCF:Lerp(desiredCF, alpha)
     end
+
+    self.LastCameraDir = Camera.CFrame.LookVector
 end
 
 addConn(UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         Aimbot.IsActive = true
+        Aimbot.LockedTarget = nil
+        Aimbot.SuppressedUntil = 0
     end
 end))
 
@@ -237,6 +325,8 @@ addConn(UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton2 then
         Aimbot.IsActive = false
         Aimbot.CurrentTarget = nil
+        Aimbot.LockedTarget = nil
+        Aimbot.LastCameraDir = nil
     end
 end))
 
@@ -582,8 +672,8 @@ local function createUI()
 
     local panel = Instance.new("Frame")
     panel.Name = "Panel"
-    panel.Size = UDim2.new(0, 500, 0, 620)
-    panel.Position = UDim2.new(0.5, -250, 0.5, -310)
+    panel.Size = UDim2.new(0, 500, 0, 640)
+    panel.Position = UDim2.new(0.5, -250, 0.5, -320)
     panel.BackgroundColor3 = BgPanel
     panel.BackgroundTransparency = 0.05
     panel.BorderSizePixel = 0
@@ -976,6 +1066,7 @@ local function createUI()
     createSection(aimTab.Scroll, "TARGETING")
     createToggle(aimTab.Scroll, "Enable Aimbot", Config.Aim.Enabled, function(v) Config.Aim.Enabled = v end)
     createToggle(aimTab.Scroll, "Hard Lock (Cứng)", Config.Aim.HardLock, function(v) Config.Aim.HardLock = v end)
+    createToggle(aimTab.Scroll, "Switch On Turn", Config.Aim.SwitchOnTurn, function(v) Config.Aim.SwitchOnTurn = v end)
     createToggle(aimTab.Scroll, "Head Only", Config.Aim.HeadOnly, function(v) Config.Aim.HeadOnly = v end)
     createToggle(aimTab.Scroll, "Visible Only", Config.Aim.VisibleOnly, function(v) Config.Aim.VisibleOnly = v end)
     createSection(aimTab.Scroll, "RANGE")
@@ -984,6 +1075,8 @@ local function createUI()
     createSlider(aimTab.Scroll, "FOV", 20, 800, Config.Aim.FOV, function(v) Config.Aim.FOV = v end)
     createSlider(aimTab.Scroll, "Smoothness", 0.01, 0.99, Config.Aim.Smoothness, function(v) Config.Aim.Smoothness = v end)
     createSlider(aimTab.Scroll, "Prediction", 0.0, 0.5, Config.Aim.Prediction, function(v) Config.Aim.Prediction = v end)
+    createSection(aimTab.Scroll, "SWITCH ON TURN")
+    createSlider(aimTab.Scroll, "Turn Threshold", 50, 1000, Config.Aim.TurnThreshold, function(v) Config.Aim.TurnThreshold = v end)
 
     local espTab = createTab("ESP", "◈")
     createSection(espTab.Scroll, "GENERAL")
@@ -1052,7 +1145,7 @@ local function createUI()
         panel.Size = UDim2.new(0, 500, 0, 0)
         panel.BackgroundTransparency = 1
         tw(panel, 0.3, {
-            Size = UDim2.new(0, 500, 0, 620),
+            Size = UDim2.new(0, 500, 0, 640),
             BackgroundTransparency = 0.05
         }, Enum.EasingStyle.Back)
     end
