@@ -40,9 +40,6 @@ local Config = {
     },
     Bypass = {
         Enabled = true,
-        SpoofWalkSpeed = true,
-        SpoofJumpPower = true,
-        SpoofGravity = true,
         AntiKick = true,
         AntiFling = true,
         AntiVoid = true,
@@ -61,61 +58,10 @@ local Connections = {}
 local function addConn(conn) table.insert(Connections, conn) return conn end
 
 local Bypass = {}
-Bypass.OriginalSpeed = nil
-Bypass.OriginalJump = nil
-Bypass.SpoofedSpeed = 16
 Bypass.OriginalGravity = nil
-Bypass.InternalChange = false
 
 local function hasExecutor()
     return type(getgenv) == "table"
-end
-
-function Bypass:SpoofWalkSpeed(enable, value)
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum then return end
-    if enable then
-        self.OriginalSpeed = hum.WalkSpeed
-        self.SpoofedSpeed = value or hum.WalkSpeed
-        hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-            if Bypass.OriginalSpeed and not Bypass.InternalChange then
-                Bypass.InternalChange = true
-                hum.WalkSpeed = Bypass.SpoofedSpeed
-                Bypass.InternalChange = false
-            end
-        end)
-        hum.WalkSpeed = self.SpoofedSpeed
-    else
-        if self.OriginalSpeed then hum.WalkSpeed = self.OriginalSpeed end
-    end
-end
-
-function Bypass:SpoofJumpPower(enable, value)
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum then return end
-    if enable then
-        self.OriginalJump = hum.UseJumpPower and hum.JumpPower or hum.JumpHeight
-        if hum.UseJumpPower then hum.JumpPower = value or hum.JumpPower
-        else hum.JumpHeight = value or hum.JumpHeight end
-    else
-        if self.OriginalJump then
-            if hum.UseJumpPower then hum.JumpPower = self.OriginalJump
-            else hum.JumpHeight = self.OriginalJump end
-        end
-    end
-end
-
-function Bypass:SpoofGravity(enable)
-    if enable then
-        self.OriginalGravity = Workspace.Gravity
-        Workspace.Gravity = 196.2
-    else
-        if self.OriginalGravity then Workspace.Gravity = self.OriginalGravity end
-    end
 end
 
 local function antiKick()
@@ -163,9 +109,6 @@ end
 function Bypass:Init()
     if self.InitDone then return end
     self.InitDone = true
-    if Config.Bypass.SpoofWalkSpeed then self:SpoofWalkSpeed(true, 100) end
-    if Config.Bypass.SpoofJumpPower then self:SpoofJumpPower(true, 100) end
-    if Config.Bypass.SpoofGravity then self:SpoofGravity(true) end
     if Config.Bypass.AntiKick then antiKick() end
     if Config.Bypass.AntiFling then
         addConn(LocalPlayer.CharacterAdded:Connect(function()
@@ -189,14 +132,6 @@ function Bypass:Toggle(enable)
     Config.Bypass.Enabled = enable
     if enable then
         self:Init()
-    else
-        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if self.OriginalSpeed and hum then hum.WalkSpeed = self.OriginalSpeed end
-        if self.OriginalJump and hum then
-            if hum.UseJumpPower then hum.JumpPower = self.OriginalJump
-            else hum.JumpHeight = self.OriginalJump end
-        end
-        if self.OriginalGravity then Workspace.Gravity = self.OriginalGravity end
     end
 end
 
@@ -602,7 +537,6 @@ local function createUI()
     local BgRowHover = Color3.fromRGB(42, 42, 60)
     local TextC = Config.UI.TextColor
     local TextDim = Color3.fromRGB(150, 150, 170)
-    local Green = Color3.fromRGB(60, 220, 120)
     local Red = Color3.fromRGB(240, 80, 80)
 
     local gui = Instance.new("ScreenGui")
@@ -1063,19 +997,6 @@ local function createUI()
     local bypassTab = createTab("BYPASS", "⚙")
     createSection(bypassTab.Scroll, "MASTER")
     createToggle(bypassTab.Scroll, "Enable Bypass", Config.Bypass.Enabled, function(v) Bypass:Toggle(v) end)
-    createSection(bypassTab.Scroll, "SPOOFING")
-    createToggle(bypassTab.Scroll, "Spoof WalkSpeed", Config.Bypass.SpoofWalkSpeed, function(v)
-        Config.Bypass.SpoofWalkSpeed = v
-        Bypass:SpoofWalkSpeed(v, 100)
-    end)
-    createToggle(bypassTab.Scroll, "Spoof JumpPower", Config.Bypass.SpoofJumpPower, function(v)
-        Config.Bypass.SpoofJumpPower = v
-        Bypass:SpoofJumpPower(v, 100)
-    end)
-    createToggle(bypassTab.Scroll, "Spoof Gravity", Config.Bypass.SpoofGravity, function(v)
-        Config.Bypass.SpoofGravity = v
-        Bypass:SpoofGravity(v)
-    end)
     createSection(bypassTab.Scroll, "PROTECTION")
     createToggle(bypassTab.Scroll, "Anti Kick", Config.Bypass.AntiKick, function(v) Config.Bypass.AntiKick = v end)
     createToggle(bypassTab.Scroll, "Anti Fling", Config.Bypass.AntiFling, function(v) Config.Bypass.AntiFling = v end)
