@@ -12,11 +12,12 @@ local Config = {
     Aim = {
         Enabled = false,
         FOV = 150,
-        Smoothness = 0.35,
-        MaxDistance = 2000,
-        VisibleOnly = true,
+        Smoothness = 0.01,
+        MaxDistance = 5000,
+        VisibleOnly = false,
         HeadOnly = true,
         Prediction = 0.0,
+        HardLock = true,
     },
     ESP = {
         Enabled = false,
@@ -158,8 +159,7 @@ end
 
 local function worldToScreen(pos)
     local sp, onScreen = Camera:WorldToViewportPoint(pos)
-    if not onScreen then return nil end
-    return Vector2.new(sp.X, sp.Y)
+    return Vector2.new(sp.X, sp.Y), onScreen
 end
 
 local function isVisible(targetPart)
@@ -186,9 +186,8 @@ function Aimbot:FindBestTarget()
             if part then
                 local dist = (part.Position - Camera.CFrame.Position).Magnitude
                 if dist <= Config.Aim.MaxDistance then
-                    local sp, onScreen = Camera:WorldToViewportPoint(part.Position)
-                    local sp2 = Vector2.new(sp.X, sp.Y)
-                    if (sp2 - center).Magnitude <= Config.Aim.FOV then
+                    local sp = worldToScreen(part.Position)
+                    if (sp - center).Magnitude <= Config.Aim.FOV then
                         local visible = (not Config.Aim.VisibleOnly) or isVisible(part)
                         if visible and dist < bestDist then
                             best = { Player = plr, Part = part }
@@ -219,8 +218,12 @@ function Aimbot:Update()
     end
     local currentCF = Camera.CFrame
     local desiredCF = CFrame.new(currentCF.Position, targetPos)
-    local alpha = 1 - math.clamp(Config.Aim.Smoothness, 0.01, 0.99)
-    Camera.CFrame = currentCF:Lerp(desiredCF, alpha)
+    if Config.Aim.HardLock then
+        Camera.CFrame = desiredCF
+    else
+        local alpha = 1 - math.clamp(Config.Aim.Smoothness, 0.01, 0.99)
+        Camera.CFrame = currentCF:Lerp(desiredCF, alpha)
+    end
 end
 
 addConn(UserInputService.InputBegan:Connect(function(input, gp)
@@ -882,8 +885,8 @@ local function createUI()
         lbl.Parent = row
 
         local valueBox = Instance.new("TextBox")
-        valueBox.Size = UDim2.new(0, 64, 0, 22)
-        valueBox.Position = UDim2.new(1, -76, 0, 7)
+        valueBox.Size = UDim2.new(0, 70, 0, 22)
+        valueBox.Position = UDim2.new(1, -82, 0, 7)
         valueBox.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
         valueBox.Text = string.format("%.2f", default)
         valueBox.TextColor3 = Accent
@@ -972,14 +975,15 @@ local function createUI()
     local aimTab = createTab("AIM", "◎")
     createSection(aimTab.Scroll, "TARGETING")
     createToggle(aimTab.Scroll, "Enable Aimbot", Config.Aim.Enabled, function(v) Config.Aim.Enabled = v end)
+    createToggle(aimTab.Scroll, "Hard Lock (Cứng)", Config.Aim.HardLock, function(v) Config.Aim.HardLock = v end)
     createToggle(aimTab.Scroll, "Head Only", Config.Aim.HeadOnly, function(v) Config.Aim.HeadOnly = v end)
     createToggle(aimTab.Scroll, "Visible Only", Config.Aim.VisibleOnly, function(v) Config.Aim.VisibleOnly = v end)
     createSection(aimTab.Scroll, "RANGE")
     createSlider(aimTab.Scroll, "Max Distance", 100, 10000, Config.Aim.MaxDistance, function(v) Config.Aim.MaxDistance = v end)
     createSection(aimTab.Scroll, "TUNING")
-    createSlider(aimTab.Scroll, "FOV", 20, 500, Config.Aim.FOV, function(v) Config.Aim.FOV = v end)
+    createSlider(aimTab.Scroll, "FOV", 20, 800, Config.Aim.FOV, function(v) Config.Aim.FOV = v end)
     createSlider(aimTab.Scroll, "Smoothness", 0.01, 0.99, Config.Aim.Smoothness, function(v) Config.Aim.Smoothness = v end)
-    createSlider(aimTab.Scroll, "Prediction", 0.0, 0.3, Config.Aim.Prediction, function(v) Config.Aim.Prediction = v end)
+    createSlider(aimTab.Scroll, "Prediction", 0.0, 0.5, Config.Aim.Prediction, function(v) Config.Aim.Prediction = v end)
 
     local espTab = createTab("ESP", "◈")
     createSection(espTab.Scroll, "GENERAL")
